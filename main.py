@@ -13,7 +13,10 @@ class BeyondInfinity:
 		self.engine = PyTiled(window_resolution = (800, 600), window_title = "Beyond Infinity")
 	
 	def run(self) -> None:
-		pass
+		while self.engine.update():
+			self.engine.load_events()
+			self.engine.draw_world()
+			print(self.engine.world.world)
 
 
 if __name__ == "__main__":
