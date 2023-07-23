@@ -5,11 +5,12 @@ Author: Bradley Pleasant - https://github.com/IcoTwilight
 Project GitHub: https://github.com/IcoTwilight/Beyond-Infinity
 File Description: This is the main file for the Beyond Infinity project.
 """
+from PyTiled import PyTiled, World, TileSet, Tile
 
 
 class BeyondInfinity:
 	def __init__(self) -> None:
-		pass
+		self.engine = PyTiled(window_resolution = (800, 600), window_title = "Beyond Infinity")
 	
 	def run(self) -> None:
 		pass
