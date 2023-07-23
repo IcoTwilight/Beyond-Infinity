@@ -18,5 +18,4 @@ class BeyondInfinity:
 if __name__ == "__main__":
 	print("Beyond Infinity Shell")
 	game = BeyondInfinity()
-	# noinspection PyPep8
 	game.run()
