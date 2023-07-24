@@ -17,6 +17,7 @@ class Tile:
 	def __init__(self, surface: Surface, tile_set) -> None:
 		self.surface = surface
 		self.tile_set: TileSet = tile_set
+		self.tile_set.add_tile(self)
 	
 	def __str__(self) -> str:
 		return f"(<{self.tile_set.name}> Tile)"
@@ -26,14 +27,20 @@ class Tile:
 
 
 class TileSet:
-	def __init__(self, name: str, tiles: list[Tile]) -> None:
+	def __init__(self, name: str) -> None:
 		self.name = name
-		self.tiles = tiles
+		self.tiles = []
+	
+	def add_tile(self, tile: Tile) -> None:
+		self.tiles.append(tile)
+	
+	def remove_tile(self, tile: Tile) -> None:
+		self.tiles.remove(tile)
 
 
 class World:
 	def __init__(self) -> None:
-		self.default_tile_set = TileSet("default", [])
+		self.default_tile_set = TileSet("default")
 		self.world: dict[tuple[int, int]: Tile] = {}
 		# tile_rules is a dictionary of rules for tiles
 		# it states that if a tile is surrounded by certain tiles,
@@ -195,6 +202,30 @@ class PyTiled:
 				self.window_height, self.window_width = self.window_resolution = event.size
 				self.screen = pygame.display.set_mode(self.window_resolution, pygame.RESIZABLE)
 	
+	def is_key_pressed(self, key: int) -> bool:
+		return self.keys_pressed[key]
+	
+	def is_key_just_pressed(self, key: int) -> bool:
+		return key in self.keys_just_pressed
+	
+	def is_key_just_released(self, key: int) -> bool:
+		return key in self.keys_just_released
+	
+	def is_mouse_button_pressed(self, button: int) -> bool:
+		return self.mouse_buttons_pressed[button]
+	
+	def is_mouse_button_just_pressed(self, button: int) -> bool:
+		return button in self.mouse_buttons_just_pressed
+	
+	def is_mouse_button_just_released(self, button: int) -> bool:
+		return button in self.mouse_buttons_just_released
+	
+	def get_mouse_position(self) -> tuple[int, int]:
+		return self.mouse_position
+	
+	def get_mouse_position_world(self) -> tuple[int, int]:
+		return self.mouse_position_world
+	
 	def update(self):
 		pygame.display.flip()
 		self.clock.tick(60)
@@ -202,9 +233,14 @@ class PyTiled:
 		return self.running
 
 	def draw_tile(self, tile: Tile, x: int | float, y: int | float) -> None:
-		self.screen.blit(tile.surface, self.camera.convert_to_screen(x, y))
+		self.screen.blit(pygame.transform.scale(tile.surface, (self.tile_size, self.tile_size)),
+		                 self.camera.convert_to_screen(x, y))
 	
 	def draw_world(self) -> None:
 		for x, y in self.camera.get_on_screen(self.window_resolution):
 			self.draw_tile(self.world.get_tile(x, y), x, y)
-			
+	
+	@staticmethod
+	def load_image(path: str) -> Surface:
+		return pygame.image.load(path).convert_alpha()
+	
