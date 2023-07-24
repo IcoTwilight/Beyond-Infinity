@@ -18,9 +18,10 @@ class Tile:
 		self.surface = surface
 		self.tile_set: TileSet = tile_set
 		self.tile_set.add_tile(self)
+		self.name = f"{self.tile_set.name} - {len(self.tile_set.tiles)}"
 	
 	def __str__(self) -> str:
-		return f"(<{self.tile_set.name}> Tile)"
+		return self.name
 	
 	def __repr__(self) -> str:
 		return str(self)
