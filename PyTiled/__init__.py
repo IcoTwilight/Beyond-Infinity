@@ -145,7 +145,36 @@ class Camera:
 		for x in range(left, right):
 			for y in range(top, bottom):
 				yield x, y
-		
+
+
+class Sprite:
+	def __init__(self, frames: list[Surface], position: tuple[int | float, int | float]) -> None:
+		self.frames = frames
+		self.frame = 0
+		self.position = position
+		self.PyTiled = None
+	
+	def draw(self) -> None:
+		self.PyTiled.screen.blit(self.frames[self.frame], self.PyTiled.camera.convert_to_screen(*self.position))
+	
+	def next_frame(self) -> None:
+		self.frame += 1
+		if self.frame >= len(self.frames):
+			self.frame = 0
+	
+	def set_frame(self, frame: int) -> None:
+		self.frame = frame
+		if self.frame >= len(self.frames):
+			# if the frame is greater than the number of frames,
+			# then use the modulo operator to get the remainder
+			self.frame %= len(self.frames)
+	
+	def set_position(self, x: int | float, y: int | float) -> None:
+		self.position = x, y
+	
+	def move(self, x: int | float, y: int | float) -> None:
+		self.position = self.position[0] + x, self.position[1] + y
+
 
 class PyTiled:
 	def __init__(self, window_resolution, window_title) -> None:
