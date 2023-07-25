@@ -32,11 +32,26 @@ class TileSet:
 		self.name = name
 		self.tiles = []
 	
-	def add_tile(self, tile: Tile) -> None:
-		self.tiles.append(tile)
+	def add_tile(self, *tiles: Tile) -> None:
+		for tile in tiles:
+			self.tiles.append(tile)
 	
-	def remove_tile(self, tile: Tile) -> None:
-		self.tiles.remove(tile)
+	def remove_tile(self, *tile: Tile) -> None:
+		for tile in tiles:
+			self.tiles.remove(tile)
+	
+	def get_tile_index(self, tile: Tile) -> int:
+		return self.tiles.index(tile)
+	
+	def __getitem__(self, index: int) -> Tile:
+		return self.tiles[index]
+	
+	def __setitem__(self, key, value):
+		self.tiles[key] = value
+	
+	def __len__(self) -> int:
+		return len(self.tiles)
+	
 
 
 class World:
@@ -187,6 +202,7 @@ class PyTiled:
 		                                      )
 		pygame.display.set_caption(window_title)
 		self.clock = pygame.time.Clock()
+		self.font = pygame.font.SysFont("Consolas", 16)
 		self.world = World()
 		
 		# initialize the clock and set running to True
@@ -204,8 +220,9 @@ class PyTiled:
 		self.mouse_buttons_just_released    = set()
 		self.mouse_position                 = pygame.mouse.get_pos()
 		self.mouse_position_world           = self.camera.convert_to_world(*self.mouse_position)
+		self.mouse_wheel                    = 0
 	
-	def load_events(self):
+	def load_events(self) -> None:
 		self.keys_pressed                   = pygame.key.get_pressed()
 		self.keys_just_pressed              = set()
 		self.keys_just_released             = set()
@@ -214,13 +231,12 @@ class PyTiled:
 		self.mouse_buttons_just_released    = set()
 		self.mouse_position                 = pygame.mouse.get_pos()
 		self.mouse_position_world           = self.camera.convert_to_world(*self.mouse_position)
+		self.mouse_wheel                    = 0
 		
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				self.running = False
 			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_ESCAPE:
-					self.running = False
 				self.keys_just_pressed.add(event.key)
 			elif event.type == pygame.KEYUP:
 				self.keys_just_released.add(event.key)
@@ -228,6 +244,8 @@ class PyTiled:
 				self.mouse_buttons_just_pressed.add(event.button)
 			elif event.type == pygame.MOUSEBUTTONUP:
 				self.mouse_buttons_just_released.add(event.button)
+			elif event.type == pygame.MOUSEWHEEL:
+				self.mouse_wheel = event.y
 			elif event.type == pygame.VIDEORESIZE:
 				self.window_height, self.window_width = self.window_resolution = event.size
 				self.screen = pygame.display.set_mode(self.window_resolution, pygame.RESIZABLE)
@@ -256,15 +274,30 @@ class PyTiled:
 	def get_mouse_position_world(self) -> tuple[int, int]:
 		return self.mouse_position_world
 	
-	def update(self):
+	def get_mouse_wheel(self) -> int:
+		return self.mouse_wheel
+	
+	def update(self) -> bool:
 		pygame.display.flip()
 		self.clock.tick(60)
 		self.screen.fill((0, 0, 0))
 		return self.running
-
+	
+	def draw_raw(self, surface: Surface, x: int | float, y: int | float) -> None:
+		self.screen.blit(surface, (x, y))
+	
+	def draw(self, surface: Surface, x: int | float, y: int | float) -> None:
+		self.screen.blit(surface, self.camera.convert_to_screen(x, y))
+	
 	def draw_tile(self, tile: Tile, x: int | float, y: int | float) -> None:
 		self.screen.blit(pygame.transform.scale(tile.surface, (self.tile_size, self.tile_size)),
 		                 self.camera.convert_to_screen(x, y))
+	
+	def draw_raw_text(self, text: str, x: int | float, y: int | float) -> None:
+		self.screen.blit(self.font.render(text, True, (255, 255, 255)), (x, y))
+	
+	def draw_text(self, text: str, x: int | float, y: int | float) -> None:
+		self.screen.blit(self.font.render(text, True, (255, 255, 255)), self.camera.convert_to_screen(x, y))
 	
 	def draw_world(self) -> None:
 		for x, y in self.camera.get_on_screen(self.window_resolution):
@@ -274,3 +307,27 @@ class PyTiled:
 	def load_image(path: str) -> Surface:
 		return pygame.image.load(path).convert_alpha()
 	
+	def load_tile_set(self, path: str, width_per_tile: int, height_per_tile: int) -> TileSet:
+		# load the image
+		image = self.load_image(path)
+		# get the width and height of the image
+		width, height = image.get_size()
+		# check that the width and height are divisible by the width_per_tile and height_per_tile
+		if width % width_per_tile != 0 or height % height_per_tile != 0:
+			raise ValueError("The width and height of the image must be divisible by the width_per_tile and height_per_tile")
+		# get the number of tiles in the image
+		num_tiles = (width // width_per_tile) * (height // height_per_tile)
+		# create a tile set
+		tile_set = TileSet(path)
+		# iterate through the tiles
+		for i in range(num_tiles):
+			# get the x and y position of the tile
+			x = (i % (width // width_per_tile)) * width_per_tile
+			y = (i // (width // width_per_tile)) * height_per_tile
+			# get the tile from the image
+			tile = image.subsurface(x, y, width_per_tile, height_per_tile)
+			# create a new tile
+			Tile(tile, tile_set)
+		# return the tile set
+		return tile_set
+		
